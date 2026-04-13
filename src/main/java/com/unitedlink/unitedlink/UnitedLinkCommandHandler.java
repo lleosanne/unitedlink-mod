@@ -56,6 +56,12 @@ public class UnitedLinkCommandHandler {
         UnitedLinkMod.LOGGER.info("[UnitedLink] /link command registered.");
     }
 
+    // ── Check rank on login ──────────────────────────────────────────────────
+@SubscribeEvent
+public void onPlayerLogin(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+    if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    checkRank(player);
+}
     // ── Periodic rank check ──────────────────────────────────────────────────
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
