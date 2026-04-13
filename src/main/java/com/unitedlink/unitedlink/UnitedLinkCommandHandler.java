@@ -108,6 +108,7 @@ public void onPlayerLogin(net.neoforged.neoforge.event.entity.player.PlayerEvent
                             .stream()
                             .anyMatch(g -> RANK_GROUPS.contains(g.getName().toLowerCase()));
 
+                   if (!hadRank) return;
                     if (hadRank) {
                         user.data().clear(node ->
                             node instanceof InheritanceNode &&
