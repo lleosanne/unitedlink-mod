@@ -12,13 +12,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,8 +29,6 @@ public class UnitedLinkCommandHandler {
     private static final Set<String> RANK_GROUPS = Set.of("supporter", "explorer", "adventurer");
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
-    // Check ranks every 5 minutes (6000 ticks)
-    private static final int CHECK_INTERVAL = 6000;
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
@@ -56,76 +52,7 @@ public class UnitedLinkCommandHandler {
         UnitedLinkMod.LOGGER.info("[UnitedLink] /link command registered.");
     }
 
-    // ── Check rank on login ──────────────────────────────────────────────────
-@SubscribeEvent
-public void onPlayerLogin(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
-    if (!(event.getEntity() instanceof ServerPlayer player)) return;
-    checkRank(player);
-}
-    // ── Periodic rank check ──────────────────────────────────────────────────
-    @SubscribeEvent
-    public void onServerTick(ServerTickEvent.Post event) {
-        if (event.getServer().getTickCount() % CHECK_INTERVAL != 0) return;
-
-        List<ServerPlayer> players = event.getServer().getPlayerList().getPlayers();
-        for (ServerPlayer player : players) {
-            checkRank(player);
-        }
-    }
-
-    private void checkRank(ServerPlayer player) {
-        String uuid = player.getUUID().toString();
-
-        CompletableFuture.supplyAsync(() -> {
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(BOT_API_URL + "/check/" + uuid))
-                        .GET()
-                        .build();
-                HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200) {
-                    JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
-                    if (json.get("lp_group").isJsonNull()) {
-                        return "REMOVE";
-                    }
-                    return json.get("lp_group").getAsString();
-                }
-                return "SKIP";
-            } catch (Exception e) {
-                return "SKIP";
-            }
-        }).thenAcceptAsync(result -> {
-            if ("SKIP".equals(result)) return;
-
-            try {
-                LuckPerms lp = LuckPermsProvider.get();
-                User user = lp.getUserManager().getUser(player.getUUID());
-                if (user == null) return;
-
-                if ("REMOVE".equals(result)) {
-                    // Remove all rank groups
-                    boolean hadRank = user.getInheritedGroups(user.getQueryOptions())
-                            .stream()
-                            .anyMatch(g -> RANK_GROUPS.contains(g.getName().toLowerCase()));
-
-                   if (!hadRank) return;
-                    if (hadRank) {
-                        user.data().clear(node ->
-                            node instanceof InheritanceNode &&
-                            RANK_GROUPS.contains(((InheritanceNode) node).getGroupName())
-                        );
-                        lp.getUserManager().saveUser(user);
-                        player.sendSystemMessage(Component.literal(
-                            "§cYour Patreon rank has been removed because your subscription ended."
-                        ));
-                        UnitedLinkMod.LOGGER.info("[UnitedLink] Removed rank from player {}", player.getName().getString());
-                    }
-                }
-            } catch (Exception e) {
-                UnitedLinkMod.LOGGER.error("[UnitedLink] Error checking rank: {}", e.getMessage());
-            }
-        }, player.getServer());
-    }
+    
 
     // ── /link <code> handler ─────────────────────────────────────────────────
     private void handleLink(ServerPlayer player, String code) {
