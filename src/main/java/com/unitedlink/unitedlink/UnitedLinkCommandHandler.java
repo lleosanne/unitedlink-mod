@@ -24,7 +24,7 @@ public class UnitedLinkCommandHandler {
 
     private static final String BOT_API_URL = System.getenv("UNITEDLINK_API_URL") != null
         ? System.getenv("UNITEDLINK_API_URL")
-        : "https://minecraft-rank-bot-production.up.railway.app";
+        : "https://minecraft-rank-bot.onrender.com";
     
     private static final Set<String> RANK_GROUPS = Set.of("supporter", "explorer", "adventurer");
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
