@@ -109,7 +109,8 @@ public class UnitedLinkCommandHandler {
                 String uuid = player.getUUID().toString();
                 CompletableFuture.runAsync(() -> {
                     try {
-                        String body = "{\"discord_id\":\"" + discordId + "\",\"minecraft_uuid\":\"" + uuid + "\",\"lp_group\":\"" + lpGroup + "\"}";
+                        String username = player.getName().getString();
+String body = "{\"discord_id\":\"" + discordId + "\",\"minecraft_uuid\":\"" + uuid + "\",\"minecraft_username\":\"" + username + "\",\"lp_group\":\"" + lpGroup + "\"}";
                         HttpRequest confirmRequest = HttpRequest.newBuilder()
                                 .uri(URI.create(BOT_API_URL + "/confirm"))
                                 .header("Content-Type", "application/json")
